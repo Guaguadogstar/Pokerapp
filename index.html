@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>射龍門專業算牌器 (自定義張數版)</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f0f2f5; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        .container { max-width: 800px; width: 100%; }
+        
+        /* 區塊樣式 */
+        .section { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h3 { margin-top: 0; color: #1a73e8; border-bottom: 2px solid #e8f0fe; padding-bottom: 8px; font-size: 16px; }
+
+        /* 設定區 */
+        .config-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-weight: bold; }
+        .num-input { width: 60px; padding: 5px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; }
+
+        /* 算牌按鈕區 */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)); gap: 8px; }
+        .card-btn {
+            background: white; border: 2px solid #ddd; border-radius: 8px; padding: 10px 5px;
+            cursor: pointer; transition: all 0.1s; position: relative;
+        }
+        .card-btn:active { background: #e8f0fe; transform: scale(0.95); }
+        .card-btn.empty { background: #eee; color: #bbb; border-color: #ddd; opacity: 0.6; }
+        .card-btn .val { font-size: 20px; font-weight: bold; display: block; }
+        .card-btn .count { font-size: 13px; color: #1a73e8; font-weight: bold; }
+
+        /* 試算機率區 */
+        .calc-box { display: flex; align-items: center; justify-content: space-around; background: #eef6ff; padding: 15px; border-radius: 10px; border: 1px solid #c2e0ff; }
+        .gate-select { font-size: 18px; padding: 8px; border-radius: 5px; border: 1px solid #1a73e8; background: white; }
+        .prob-display { text-align: center; min-width: 100px; }
+        .prob-val { font-size: 32px; font-weight: bold; color: #d93025; display: block; }
+        .prob-label { font-size: 12px; color: #5f6368; font-weight: bold; }
+
+        .footer { display: flex; justify-content: space-between; margin-top: 15px; gap: 10px; }
+        button.tool-btn { flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .reset { background: #fce8e6; color: #d93025; border: 1px solid #f1c4c4; }
+        .undo { background: #e8f0fe; color: #1967d2; border: 1px solid #c2e0ff; }
+        .apply { background: #1a73e8; color: white; border: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 style="text-align: center; color: #333;">🎯 射龍門專業助手</h2>
+
+    <div class="section">
+        <div class="config-row">
+            <span>每種點數預設張數：</span>
+            <input type="number" id="baseCount" class="num-input" value="4" min="1">
+            <button class="tool-btn apply" onclick="confirmReset()">套用並重新開始</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>1. 點擊記錄已出的牌 (即時扣除)</h3>
+        <div class="grid" id="cardGrid"></div>
+        <div class="footer">
+            <button class="tool-btn undo" onclick="undoLast()">↩ 點錯了 (回一步)</button>
+            <button class="tool-btn reset" onclick="confirmReset()">♻️ 整局重置</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>2. 模擬射龍門機率</h3>
+        <div class="calc-box">
+            <div>
+                <div style="font-size:12px; color: #666; margin-bottom:4px;">左門柱</div>
+                <select id="gate1" class="gate-select" onchange="calculate()"></select>
+            </div>
+            
+            <div class="prob-display">
+                <span class="prob-label">射中勝率</span>
+                <span id="probResult" class="prob-val">--%</span>
+            </div>
+
+            <div>
+                <div style="font-size:12px; color: #666; margin-bottom:4px;">右門柱</div>
+                <select id="gate2" class="gate-select" onchange="calculate()"></select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const cardValues = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+    const cardMap = { 'A': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13 };
+    let counts = {};
+    let history = [];
+
+    // 初始化/重置遊戲
+    function init() {
+        const initialPerCard = parseInt(document.getElementById('baseCount').value) || 4;
+        const grid = document.getElementById('cardGrid');
+        const g1 = document.getElementById('gate1');
+        const g2 = document.getElementById('gate2');
+        
+        // 清空現有內容
+        grid.innerHTML = '';
+        const prevG1 = g1.value;
+        const prevG2 = g2.value;
+        g1.innerHTML = '<option value="">選牌</option>';
+        g2.innerHTML = '<option value="">選牌</option>';
+
+        cardValues.forEach(v => {
+            counts[v] = initialPerCard;
+            
+            // 建立算牌按鈕
+            const btn = document.createElement('button');
+            btn.className = 'card-btn';
+            btn.id = `btn-${v}`;
+            btn.onclick = () => subtract(v);
+            btn.innerHTML = `<span class="val">${v}</span><span class="count" id="c-${v}">${initialPerCard}</span>`;
+            grid.appendChild(btn);
+
+            // 建立選單選項
+            g1.add(new Option(v, v));
+            g2.add(new Option(v, v));
+        });
+
+        // 保持之前的選擇（如果有的話）
+        g1.value = prevG1;
+        g2.value = prevG2;
+        calculate();
+    }
+
+    function subtract(v) {
+        if (counts[v] > 0) {
+            history.push(v);
+            counts[v]--;
+            updateUI(v);
+            calculate();
+        }
+    }
+
+    function undoLast() {
+        if (history.length > 0) {
+            const last = history.pop();
+            counts[last]++;
+            updateUI(last);
+            calculate();
+        }
+    }
+
+    function updateUI(v) {
+        const cSpan = document.getElementById(`c-${v}`);
+        const btn = document.getElementById(`btn-${v}`);
+        cSpan.innerText = counts[v];
+        if (counts[v] === 0) btn.classList.add('empty');
+        else btn.classList.remove('empty');
+    }
+
+    function calculate() {
+        const v1 = document.getElementById('gate1').value;
+        const v2 = document.getElementById('gate2').value;
+        const resSpan = document.getElementById('probResult');
+
+        if (!v1 || !v2) {
+            resSpan.innerText = "--%";
+            return;
+        }
+
+        const n1 = cardMap[v1];
+        const n2 = cardMap[v2];
+        const min = Math.min(n1, n2);
+        const max = Math.max(n1, n2);
+
+        let total = 0;
+        let success = 0;
+
+        cardValues.forEach(v => {
+            const weight = cardMap[v];
+            const num = counts[v];
+            total += num;
+            if (weight > min && weight < max) {
+                success += num;
+            }
+        });
+
+        if (total === 0) {
+            resSpan.innerText = "0%";
+        } else {
+            const prob = ((success / total) * 100).toFixed(1);
+            resSpan.innerText = prob + "%";
+        }
+    }
+
+    function confirmReset() {
+        if (history.length === 0 || confirm("這會清除所有記錄並依照新張數重置，確定嗎？")) {
+            history = [];
+            init();
+        }
+    }
+
+    // 啟動
+    init();
+</script>
+
+</body>
+</html>
