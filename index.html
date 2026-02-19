@@ -3,200 +3,207 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>射龍門專業算牌器 (自定義張數版)</title>
+    <title>射龍門神算助手 - 專業版</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f0f2f5; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
-        .container { max-width: 800px; width: 100%; }
+        :root { --primary: #1a73e8; --danger: #d93025; --warning: #f9ab00; --success: #1e8e3e; }
+        body { font-family: sans-serif; background: #f8f9fa; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        .container { max-width: 500px; width: 100%; }
+        .section { background: white; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        h3 { margin: 0 0 10px 0; font-size: 14px; color: #5f6368; display: flex; justify-content: space-between; align-items: center; }
         
-        /* 區塊樣式 */
-        .section { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        h3 { margin-top: 0; color: #1a73e8; border-bottom: 2px solid #e8f0fe; padding-bottom: 8px; font-size: 16px; }
-
         /* 設定區 */
-        .config-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-weight: bold; }
-        .num-input { width: 60px; padding: 5px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; }
+        .config-group { display: flex; gap: 8px; align-items: center; margin-bottom: 5px; }
+        .num-input { width: 50px; padding: 5px; border-radius: 4px; border: 1px solid #ddd; text-align: center; }
+        .apply-btn { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; }
 
-        /* 算牌按鈕區 */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(65px, 1fr)); gap: 8px; }
+        /* 算牌區 */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 6px; }
         .card-btn {
-            background: white; border: 2px solid #ddd; border-radius: 8px; padding: 10px 5px;
-            cursor: pointer; transition: all 0.1s; position: relative;
+            background: white; border: 1px solid #dadce0; border-radius: 8px; padding: 8px 0;
+            cursor: pointer; position: relative; transition: 0.1s;
         }
-        .card-btn:active { background: #e8f0fe; transform: scale(0.95); }
-        .card-btn.empty { background: #eee; color: #bbb; border-color: #ddd; opacity: 0.6; }
-        .card-btn .val { font-size: 20px; font-weight: bold; display: block; }
-        .card-btn .count { font-size: 13px; color: #1a73e8; font-weight: bold; }
+        .card-btn:active { background: #e8f0fe; }
+        .card-btn.empty { opacity: 0.3; background: #f1f3f4; }
+        .card-btn .val { font-size: 18px; font-weight: bold; display: block; }
+        .card-btn .count { font-size: 12px; color: var(--primary); font-weight: bold; }
 
-        /* 試算機率區 */
-        .calc-box { display: flex; align-items: center; justify-content: space-around; background: #eef6ff; padding: 15px; border-radius: 10px; border: 1px solid #c2e0ff; }
-        .gate-select { font-size: 18px; padding: 8px; border-radius: 5px; border: 1px solid #1a73e8; background: white; }
-        .prob-display { text-align: center; min-width: 100px; }
-        .prob-val { font-size: 32px; font-weight: bold; color: #d93025; display: block; }
-        .prob-label { font-size: 12px; color: #5f6368; font-weight: bold; }
+        /* 試算區 */
+        .calc-area { display: flex; flex-direction: column; gap: 10px; }
+        .gate-input-group { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .gate-select { flex: 1; padding: 10px; font-size: 16px; border-radius: 8px; border: 2px solid #ddd; background: white; }
+        
+        /* 結果面板 */
+        .result-panel { background: #202124; color: white; border-radius: 8px; padding: 15px; text-align: center; margin-top: 5px; }
+        .res-row { display: flex; justify-content: space-around; align-items: center; }
+        .res-item { display: flex; flex-direction: column; }
+        .res-label { font-size: 12px; color: #9aa0a6; }
+        .res-num { font-size: 26px; font-weight: bold; }
+        .win { color: #81c995; }
+        .lose { color: #f28b82; }
 
-        .footer { display: flex; justify-content: space-between; margin-top: 15px; gap: 10px; }
-        button.tool-btn { flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; font-size: 14px; }
-        .reset { background: #fce8e6; color: #d93025; border: 1px solid #f1c4c4; }
-        .undo { background: #e8f0fe; color: #1967d2; border: 1px solid #c2e0ff; }
-        .apply { background: #1a73e8; color: white; border: none; }
+        .footer-btns { display: flex; gap: 8px; margin-top: 10px; }
+        button.action-btn { flex: 1; padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .undo { background: #e8f0fe; color: var(--primary); border: 1px solid #c2e0ff; }
+        .reset { background: #fce8e6; color: var(--danger); border: 1px solid #f1c4c4; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="text-align: center; color: #333;">🎯 射龍門專業助手</h2>
-
     <div class="section">
-        <div class="config-row">
-            <span>每種點數預設張數：</span>
+        <h3>牌數設定</h3>
+        <div class="config-group">
+            <span>每種點數幾張：</span>
             <input type="number" id="baseCount" class="num-input" value="4" min="1">
-            <button class="tool-btn apply" onclick="confirmReset()">套用並重新開始</button>
+            <button class="apply-btn" onclick="confirmInit()">套用並重新開始</button>
         </div>
+        <p style="font-size: 11px; color: #999; margin: 5px 0 0 0;">(一副牌選 4，兩副牌選 8)</p>
     </div>
 
     <div class="section">
-        <h3>1. 點擊記錄已出的牌 (即時扣除)</h3>
+        <h3>
+            <span>1. 剩餘牌數 (點擊扣除)</span>
+            <span id="totalRemain" style="color:var(--primary)">剩餘 -- 張</span>
+        </h3>
         <div class="grid" id="cardGrid"></div>
-        <div class="footer">
-            <button class="tool-btn undo" onclick="undoLast()">↩ 點錯了 (回一步)</button>
-            <button class="tool-btn reset" onclick="confirmReset()">♻️ 整局重置</button>
+        <div class="footer-btns">
+            <button class="action-btn undo" onclick="undo()">↩ 回復一步</button>
+            <button class="action-btn reset" onclick="confirmReset()">♻️ 整局清空</button>
         </div>
     </div>
 
     <div class="section">
-        <h3>2. 模擬射龍門機率</h3>
-        <div class="calc-box">
-            <div>
-                <div style="font-size:12px; color: #666; margin-bottom:4px;">左門柱</div>
-                <select id="gate1" class="gate-select" onchange="calculate()"></select>
+        <h3>2. 射龍門試算區</h3>
+        <div class="calc-area">
+            <div class="gate-input-group">
+                <select id="g1" class="gate-select" onchange="calculate()"></select>
+                <span style="font-weight:bold">VS</span>
+                <select id="g2" class="gate-select" onchange="calculate()"></select>
             </div>
             
-            <div class="prob-display">
-                <span class="prob-label">射中勝率</span>
-                <span id="probResult" class="prob-val">--%</span>
-            </div>
-
-            <div>
-                <div style="font-size:12px; color: #666; margin-bottom:4px;">右門柱</div>
-                <select id="gate2" class="gate-select" onchange="calculate()"></select>
+            <div id="resultPanel" class="result-panel">
+                <div class="res-row">
+                    <div class="res-item">
+                        <span class="res-label">射中勝率</span>
+                        <span id="winProb" class="res-num win">--%</span>
+                    </div>
+                    <div class="res-item">
+                        <span class="res-label">撞柱風險</span>
+                        <span id="hitProb" class="res-num lose">--%</span>
+                    </div>
+                </div>
+                <div id="advice" style="margin-top: 10px; font-size: 13px; color: #9aa0a6;">請選擇兩張門柱</div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    const cardValues = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-    const cardMap = { 'A': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13 };
+    const vals = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+    const map = {'A':1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13};
     let counts = {};
     let history = [];
 
-    // 初始化/重置遊戲
     function init() {
-        const initialPerCard = parseInt(document.getElementById('baseCount').value) || 4;
+        const startNum = parseInt(document.getElementById('baseCount').value) || 4;
         const grid = document.getElementById('cardGrid');
-        const g1 = document.getElementById('gate1');
-        const g2 = document.getElementById('gate2');
+        const g1 = document.getElementById('g1');
+        const g2 = document.getElementById('g2');
         
-        // 清空現有內容
         grid.innerHTML = '';
         const prevG1 = g1.value;
         const prevG2 = g2.value;
-        g1.innerHTML = '<option value="">選牌</option>';
-        g2.innerHTML = '<option value="">選牌</option>';
+        g1.innerHTML = '<option value="">門柱1</option>';
+        g2.innerHTML = '<option value="">門柱2</option>';
 
-        cardValues.forEach(v => {
-            counts[v] = initialPerCard;
-            
-            // 建立算牌按鈕
-            const btn = document.createElement('button');
+        vals.forEach(v => {
+            counts[v] = startNum;
+            let btn = document.createElement('button');
             btn.className = 'card-btn';
             btn.id = `btn-${v}`;
-            btn.onclick = () => subtract(v);
-            btn.innerHTML = `<span class="val">${v}</span><span class="count" id="c-${v}">${initialPerCard}</span>`;
+            btn.onclick = () => { history.push(v); counts[v]--; update(); };
+            btn.innerHTML = `<span class="val">${v}</span><span class="count" id="c-${v}">${startNum}</span>`;
             grid.appendChild(btn);
-
-            // 建立選單選項
+            
             g1.add(new Option(v, v));
             g2.add(new Option(v, v));
         });
-
-        // 保持之前的選擇（如果有的話）
+        
         g1.value = prevG1;
         g2.value = prevG2;
+        update();
+    }
+
+    function update() {
+        let total = 0;
+        vals.forEach(v => {
+            total += counts[v];
+            document.getElementById(`c-${v}`).innerText = counts[v];
+            document.getElementById(`btn-${v}`).classList.toggle('empty', counts[v] <= 0);
+        });
+        document.getElementById('totalRemain').innerText = `剩餘 ${total} 張`;
         calculate();
     }
 
-    function subtract(v) {
-        if (counts[v] > 0) {
-            history.push(v);
-            counts[v]--;
-            updateUI(v);
-            calculate();
-        }
-    }
-
-    function undoLast() {
-        if (history.length > 0) {
-            const last = history.pop();
+    function undo() {
+        if(history.length > 0) {
+            let last = history.pop();
             counts[last]++;
-            updateUI(last);
-            calculate();
+            update();
         }
-    }
-
-    function updateUI(v) {
-        const cSpan = document.getElementById(`c-${v}`);
-        const btn = document.getElementById(`btn-${v}`);
-        cSpan.innerText = counts[v];
-        if (counts[v] === 0) btn.classList.add('empty');
-        else btn.classList.remove('empty');
     }
 
     function calculate() {
-        const v1 = document.getElementById('gate1').value;
-        const v2 = document.getElementById('gate2').value;
-        const resSpan = document.getElementById('probResult');
+        const v1 = document.getElementById('g1').value;
+        const v2 = document.getElementById('g2').value;
+        if(!v1 || !v2) return;
 
-        if (!v1 || !v2) {
-            resSpan.innerText = "--%";
-            return;
-        }
-
-        const n1 = cardMap[v1];
-        const n2 = cardMap[v2];
-        const min = Math.min(n1, n2);
-        const max = Math.max(n1, n2);
-
-        let total = 0;
-        let success = 0;
-
-        cardValues.forEach(v => {
-            const weight = cardMap[v];
-            const num = counts[v];
-            total += num;
-            if (weight > min && weight < max) {
-                success += num;
-            }
+        const n1 = map[v1], n2 = map[v2];
+        const min = Math.min(n1, n2), max = Math.max(n1, n2);
+        
+        let total = 0, winCount = 0, hitCount = 0;
+        vals.forEach(v => {
+            let w = map[v], c = counts[v];
+            total += c;
+            if(w > min && w < max) winCount += c;
+            if(w === min || w === max) hitCount += c;
         });
 
         if (total === 0) {
-            resSpan.innerText = "0%";
-        } else {
-            const prob = ((success / total) * 100).toFixed(1);
-            resSpan.innerText = prob + "%";
+            document.getElementById('winProb').innerText = '0%';
+            document.getElementById('hitProb').innerText = '0%';
+            return;
         }
+
+        const winP = ((winCount/total)*100).toFixed(1);
+        const hitP = ((hitCount/total)*100).toFixed(1);
+        
+        document.getElementById('winProb').innerText = winP + '%';
+        document.getElementById('hitProb').innerText = hitP + '%';
+        
+        let advice = "";
+        if (n1 === n2) advice = "⚠️ 門柱相同：撞柱賠雙倍，射進算輸！";
+        else if (winP > 60 && hitP < 10) advice = "🟢 機率極高：大膽進攻！";
+        else if (hitP > 15) advice = "🔴 撞柱風險大：小心雙倍賠付";
+        else advice = "🟡 尋常機率：建議小注試水溫";
+        document.getElementById('advice').innerText = advice;
     }
 
-    function confirmReset() {
-        if (history.length === 0 || confirm("這會清除所有記錄並依照新張數重置，確定嗎？")) {
+    function confirmInit() {
+        if (history.length === 0 || confirm("這會重新設定所有牌數，確定嗎？")) {
             history = [];
             init();
         }
     }
 
-    // 啟動
+    function confirmReset() {
+        if (confirm("確定重置本局？")) {
+            history = [];
+            init();
+        }
+    }
+
     init();
 </script>
-
 </body>
 </html>
